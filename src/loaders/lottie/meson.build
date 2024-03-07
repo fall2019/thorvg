@@ -1,3 +1,5 @@
+subdir('jerryscript')
+
 source_file = [
    'tvgLottieAnimation.cpp',
    'tvgLottieBuilder.h',
