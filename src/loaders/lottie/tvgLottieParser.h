@@ -109,7 +109,7 @@ private:
     //Current parsing context
     struct Context {
         LottieLayer* layer = nullptr;
-        LottieGradient* gradient = nullptr;
+        LottieObject* parent = nullptr;
     } context;
 };
 
