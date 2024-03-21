@@ -24,11 +24,17 @@
 #define _TVG_LOTTIE_BUILDER_H_
 
 #include "tvgCommon.h"
+#include "tvgLottieExpressions.h"
 
 struct LottieComposition;
 
 struct LottieBuilder
 {
+    LottieExpressions exps;
+
+    LottieBuilder() {}
+    ~LottieBuilder() {}
+
     bool update(LottieComposition* comp, float progress);
     void build(LottieComposition* comp);
 };

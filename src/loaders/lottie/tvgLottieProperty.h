@@ -28,6 +28,8 @@
 #include "tvgMath.h"
 #include "tvgLines.h"
 #include "tvgLottieInterpolator.h"
+#include "tvgLottieExpressions.h"
+
 
 struct PathSet
 {
@@ -207,7 +209,34 @@ struct LottieProperty
 
     virtual ~LottieProperty() {}
 
-    bool proxy = false;         //this property is a proxy of others, so do not release resources itself.
+    LottieExpression* exp = nullptr;
+    bool proxy = false;  //this property is a proxy of others, so do not release resources itself.
+};
+
+
+struct LottieExpression
+{
+    char* code;
+    LottieLayer* layer;
+    LottieObject* object;
+    LottieProperty* property;
+    LottieProperty::Type type;
+
+    bool refernce = false;
+
+    LottieExpression(char* code, LottieLayer* layer, LottieObject* object, LottieProperty* property, LottieProperty::Type type)
+    {
+        this->code = code;
+        this->layer = layer;
+        this->object = object;
+        this->property = property;
+        this->type = type;
+    }
+
+    ~LottieExpression()
+    {
+        free(code);
+    }
 };
 
 
@@ -230,6 +259,7 @@ struct LottieGenericProperty : LottieProperty
     {
         if (proxy) return;
         delete(frames);
+        delete(exp);
     }
 
     LottieScalarFrame<T>& newFrame()
@@ -260,6 +290,13 @@ struct LottieGenericProperty : LottieProperty
         return frame->interpolate(frame + 1, frameNo);
     }
 
+    float operator()(float frameNo, LottieExpressions& exps)
+    {
+        float out;
+        if (exp && exps.dispatchFloat(frameNo, out, exp)) return out;
+        return operator()(frameNo);
+    }
+
     T& operator=(const T& other)
     {
         //shallow copy, used for slot overriding
@@ -288,6 +325,11 @@ struct LottiePathSet : LottieProperty
     void release()
     {
         if (proxy) return;
+
+        if (exp) {
+            delete(exp);
+            exp = nullptr;
+        }
 
         free(value.cmds);
         free(value.pts);
@@ -321,8 +363,10 @@ struct LottiePathSet : LottieProperty
         return (*frames)[frames->count];
     }
 
-    bool operator()(float frameNo, Array<PathCommand>& cmds, Array<Point>& pts)
+    bool operator()(float frameNo, Array<PathCommand>& cmds, Array<Point>& pts, LottieExpressions& exps)
     {
+        if (exp && exps.dispatchPathSet(frameNo, cmds, pts, exp)) return true;
+
         if (!frames) {
             copy(value, cmds);
             copy(value, pts);
@@ -389,6 +433,11 @@ struct LottieColorStop : LottieProperty
     void release()
     {
         if (proxy) return;
+
+        if (exp) {
+            delete(exp);
+            exp = nullptr;
+        }
 
         if (value.data) {
             free(value.data);
@@ -510,6 +559,7 @@ struct LottiePosition : LottieProperty
     {
         if (proxy) return;
         delete(frames);
+        delete(exp);
     }
 
     LottieVectorFrame<Point>& newFrame()
@@ -573,6 +623,11 @@ struct LottieTextDoc : LottieProperty
     void release()
     {
         if (proxy) return;
+
+        if (exp) {
+            delete(exp);
+            exp = nullptr;
+        }
 
         if (value.text) {
             free(value.text);

@@ -24,12 +24,26 @@
 #include "tvgCompressor.h"
 #include "tvgLottieModel.h"
 #include "tvgLottieParser.h"
+#include "tvgLottieExpressions.h"
 
 
 /************************************************************************/
 /* Internal Class Implementation                                        */
 /************************************************************************/
 
+static LottieExpression* _expression(char* code, LottieLayer* layer, LottieObject* object, LottieProperty* property, LottieProperty::Type type)
+{
+#ifdef THORVG_LOTTIE_EXPRESSIONS_SUPPORT
+    return new LottieExpression(code, layer, object, property, type);
+#else
+    (void) code;
+    (void) layer;
+    (void) object;
+    (void) property;
+    (void) type;
+    return nullptr;
+#endif
+}
 
 
 static char* _int2str(int num)
@@ -482,7 +496,10 @@ void LottieParser::parseProperty(T& prop, LottieObject* obj)
                 return;
             }
             comp->slots.push(new LottieSlot(sid, obj, type));
-        } else skip(key);
+        } else if (!strcmp(key, "x")) {
+            prop.exp = _expression(getStringCopy(), context.layer, context.parent, &prop, type);
+        }
+        else skip(key);
     }
 }
 
@@ -637,7 +654,7 @@ LottieSolidStroke* LottieParser::parseSolidStroke()
 }
 
 
- void LottieParser::getPathSet(LottiePathSet& path)
+void LottieParser::getPathSet(LottiePathSet& path)
 {
     enterObject();
     while (auto key = nextObjectKey()) {
@@ -648,6 +665,8 @@ LottieSolidStroke* LottieParser::parseSolidStroke()
             } else {
                 getValue(path.value);
             }
+        } else if (!strcmp(key, "x")) {
+            path.exp = _expression(getStringCopy(), context.layer, context.parent, &path, LottieProperty::Type::PathSet);
         } else skip(key);
     }
 }

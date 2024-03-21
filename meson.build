@@ -56,6 +56,7 @@ endif
 
 if all_loaders or get_option('loaders').contains('lottie') == true
     config_h.set10('THORVG_LOTTIE_LOADER_SUPPORT', true)
+    config_h.set10('THORVG_LOTTIE_EXPRESSIONS_SUPPORT', true)
 endif
 
 if all_loaders or get_option('loaders').contains('ttf') == true
