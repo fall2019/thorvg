@@ -204,7 +204,10 @@ uint32_t bsearch(T* frames, float frameNo)
 struct LottieProperty
 {
     enum class Type : uint8_t { Point = 0, Float, Opacity, Color, PathSet, ColorStop, Position, TextDoc, Invalid };
+
     virtual ~LottieProperty() {}
+
+    bool proxy = false;         //this property is a proxy of others, so do not release resources itself.
 };
 
 
@@ -225,6 +228,7 @@ struct LottieGenericProperty : LottieProperty
 
     void release()
     {
+        if (proxy) return;
         delete(frames);
     }
 
@@ -283,6 +287,8 @@ struct LottiePathSet : LottieProperty
 
     void release()
     {
+        if (proxy) return;
+
         free(value.cmds);
         free(value.pts);
 
@@ -382,6 +388,8 @@ struct LottieColorStop : LottieProperty
 
     void release()
     {
+        if (proxy) return;
+
         if (value.data) {
             free(value.data);
             value.data = nullptr;
@@ -500,6 +508,7 @@ struct LottiePosition : LottieProperty
 
     void release()
     {
+        if (proxy) return;
         delete(frames);
     }
 
@@ -563,6 +572,8 @@ struct LottieTextDoc : LottieProperty
 
     void release()
     {
+        if (proxy) return;
+
         if (value.text) {
             free(value.text);
             value.text = nullptr;
